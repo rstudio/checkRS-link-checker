@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+import logging
+import os
+import yaml
+
+from checkrs_linkto import LinkToReport
+
+
+# create logger
+logger = logging.getLogger('linkto_report')
+
+
+def parse_options():
+    command_parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    command_parser.add_argument(
+        "--golden-file",
+        help="file from previous run that we will compare against",
+        action="store",
+        dest="history_golden",
+        type=str)
+
+    command_parser.add_argument(
+        "--new-file",
+        help="file from the current run",
+        action="store",
+        dest="history_new",
+        type=str)
+
+    command_parser.add_argument(
+        "--report",
+        help="name of the output report",
+        action="store",
+        dest="report",
+        type=str)
+
+    command_parser.add_argument(
+        "--debug",
+        help="turn on debugging messages in the log",
+        action="store_true",
+        dest="debug")
+
+    command_parser.add_argument(
+        "--stream-log",
+        help="print log messages to the console",
+        action="store_true",
+        dest="stream_log")
+
+    command_parser.add_argument(
+        "--logfile",
+        help="name of the logfile",
+        action="store",
+        dest="logfile",
+        type=str)
+
+    command_parser.add_argument(
+        "--config",
+        help="name of the configuration file",
+        action="store",
+        dest="config",
+        default="config_default.yml",
+        type=str)
+
+    # parse command line options
+    options = command_parser.parse_args()
+
+    combined_opts = dict()
+
+    # read the configuration file
+    with open(options.config) as f:
+        combined_opts = yaml.load(f, Loader=yaml.FullLoader)
+
+    # override the configuration file with values from the command line
+    options_dict = vars(options)
+    for key in options_dict.keys():
+        combined_opts['report'][key] = options_dict[key]
+
+    return combined_opts['report']
+
+
+if __name__ == "__main__":
+
+    # parse the command line options
+    options = parse_options()
+
+    if options['debug'] is True:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+
+    logger.setLevel(loglevel)
+
+    # create logging formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # set up a log file
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(options['logfile'])
+    fh.setLevel(logging.NOTSET)
+
+    # setting the logging formatter for this handler
+    fh.setFormatter(formatter)
+
+    # add the handler to the logger
+    logger.addHandler(fh)
+
+    # set up a log streamer
+    if options['stream_log'] is True:
+
+        # create console handler which logs even debug messages
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.NOTSET)
+
+        # setting the logging formatter for this handler
+        ch.setFormatter(formatter)
+
+        # add the handler to the logger
+        logger.addHandler(ch)
+
+    # check if the golden file exists
+    if not (os.path.isfile(options['history_golden']) and os.access(options['history_golden'], os.R_OK)):
+        logger.error(f"File {options['history_golden']} doesn't exist or isn't readable")
+        sys.exit(2)
+
+    # check if the new file exists
+    if not (os.path.isfile(options['history_new']) and os.access(options['history_new'], os.R_OK)):
+        logger.error(f"File {options['history_new']} doesn't exist or isn't readable")
+        sys.exit(2)
+
+    lcr = LinkToReport(options['history_golden'], options['history_new'])
+    lcr.report_connection_errors(options['ignored_connection_error_patterns'])
+    lcr.report_status_errors(options['ignored_status_error_patterns'])
+    lcr.report_url_visit_differences()
+    lcr.report_link_differences()
+
+    # saving the history dictionary into a file as a JSON formatted data and pretty print
+    with open(options['report'], "w") as f:
+        f.write(lcr.report)
+
+    if lcr.error_flag is True:
+        report_path = os.path.join(os.getcwd(), options['report'])
+        msg = (f"Errors detected while processing link_checker output."
+               f" See {report_path} for more details. In Jenkins, check for the file in Build Artifacts")
+
+        logger.info(msg)
+        print(msg)
+
+        sys.exit(1)
+
