@@ -56,5 +56,5 @@ jobs:
             VERSION=${{ steps.create_release_artifact.package_version }}
           push: true
           tags: |
-            rstudio/checkRS-linkto:${{ env.BRANCH_NAME }}
-            rstudio/checkRS-linkto:${{ env.BRANCH_NAME }}-${{ env.SHA_SHORT }}
+            rstudio/checkrs-linkto:${{ env.BRANCH_NAME }}
+            rstudio/checkrs-linkto:${{ env.BRANCH_NAME }}-${{ env.SHA_SHORT }}
