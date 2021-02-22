@@ -34,6 +34,13 @@ bdist:
 	pipenv run python3 setup.py bdist_wheel
 	shasum ${RELEASE_ARTIFACT_WHL} > ${RELEASE_ARTIFACT_WHL}.sha
 
+.PHONY: release-artifact
+release-artifact: bdist
+	@echo "::set-output name=package_version::$(PACKAGE_VERSION)"
+	@echo "::set-output name=tarball::$(FUZZBUCKET_RELEASE_ARTIFACT)"
+	@echo "::set-output name=tarball_basename::$(notdir $(FUZZBUCKET_RELEASE_ARTIFACT))"
+
+
 .PHONY: install
 install:
 	pipenv run pip install --upgrade .
