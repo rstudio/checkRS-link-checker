@@ -33,16 +33,17 @@ sdist:
 	shasum ${RELEASE_ARTIFACT_TGZ} > ${RELEASE_ARTIFACT_TGZ}.sha
 
 .PHONY: bdist
-bdist:
-	pipenv run python3 setup.py bdist_wheel
-	shasum ${RELEASE_ARTIFACT_WHL} > ${RELEASE_ARTIFACT_WHL}.sha
+bdist: $(RELEASE_ARTIFACT_WHL)
 
 .PHONY: release-artifact
-release-artifact: bdist
-	@echo "::set-output name=package_version::$(PACKAGE_VERSION)"
-	@echo "::set-output name=tarball::$(FUZZBUCKET_RELEASE_ARTIFACT)"
-	@echo "::set-output name=tarball_basename::$(notdir $(FUZZBUCKET_RELEASE_ARTIFACT))"
+release-artifact: $(RELEASE_ARTIFACT_WHL)
+	@echo "::set-output name=package_version::${PACKAGE_VERSION}"
+	@echo "::set-output name=tarball::${RELEASE_ARTIFACT_WHL}"
+	@echo "::set-output name=tarball_basename::$(notdir ${RELEASE_ARTIFACT_WHL})"
 
+$(RELEASE_ARTIFACT_WHL): $(wildcard src/*.py) $(wildcard bin/*) setup.py
+	pipenv run python3 setup.py bdist_wheel
+	shasum ${RELEASE_ARTIFACT_WHL} > ${RELEASE_ARTIFACT_WHL}.sha
 
 .PHONY: install
 install:
