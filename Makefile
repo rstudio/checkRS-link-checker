@@ -16,8 +16,11 @@ pyenv:
 	pyenv install 3.9.0 --skip-existing; \
 	pyenv virtualenv-delete ${DIRNAME} || true; \
 	pyenv virtualenv 3.9.0 ${DIRNAME}; \
-	pyenv local ${DIRNAME}; \
-	pip install pipenv; \
+	pyenv local ${DIRNAME};
+
+.PHONY: deps
+deps:
+	python3 -m pip install pipenv;
 	pipenv install --dev;
 
 .PHONY: test

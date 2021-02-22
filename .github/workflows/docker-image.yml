@@ -29,8 +29,7 @@ jobs:
       -
         name: Install dependencies
         run: |
-          python3 -m pip install --no-cache-dir pipenv;
-          pipenv install --system --dev --pre;
+          make deps
       -
         name: Build the package's binary distribution
         id: create_release_artifact
