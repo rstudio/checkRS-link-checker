@@ -52,7 +52,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           build-args: |
-            VERSION=${{ steps.create_release_artifact.package_version }}
+            VERSION=${{ steps.create_release_artifact.outputs.package_version }}
           context: .
           push: true
           tags: |
