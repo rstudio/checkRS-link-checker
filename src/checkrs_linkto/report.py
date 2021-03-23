@@ -62,6 +62,9 @@ class LinkToReport:
         # this is the text of the report
         self.report = ""
 
+        # report counts
+        self.counts = {}
+
     def report_connection_errors(self, ignored_connection_error_patterns=[]):
         """
         Look for URL's that we could not connect to that would have a response code of 0
@@ -70,6 +73,7 @@ class LinkToReport:
         """
 
         self.report += "CONNECTION ERRORS:\n\n"
+        self.counts['connection_errors'] = 0
 
         for k, v in self.history_new.items():
             if v["response_code"] == 0:
@@ -93,6 +97,8 @@ class LinkToReport:
                 self.report += f"\tlinked to from: {v['visited_from'][0]}\n"
                 self.report += f"\n"
 
+                self.counts['connection_errors'] += 1
+
         self.report += '\n\n'
 
         return self
@@ -104,6 +110,7 @@ class LinkToReport:
         """
 
         self.report += "STATUS ERRORS:\n\n"
+        self.counts['status_errors'] = 0
 
         for k, v in self.history_new.items():
             # check if this record has a status code that we should be ignoring
@@ -131,6 +138,9 @@ class LinkToReport:
                 self.report += f"\tstatus_code: {v['response_code']}\n"
                 self.report += f"\tlinked to from: {v['visited_from'][0]}\n"
                 self.report += "\n"
+
+                self.counts['status_errors'] += 1
+
         self.report += '\n\n'
 
         return self
@@ -164,6 +174,8 @@ class LinkToReport:
         urls_not_visited = history_golden_keys.difference(history_new_keys)
 
         self.report += "URL VISIT DIFFERENCES:\n\n"
+        self.counts['url_visit_differences_old'] = len(urls_not_visited)
+        self.counts['url_visit_differences_new'] = len(new_urls_visited)
 
         if len(new_urls_visited) == 0 and len(urls_not_visited) == 0:
             self.report += '\n\n'
@@ -191,6 +203,8 @@ class LinkToReport:
         logger.debug(f"processing report_link_differences")
 
         self.report += "LINK DIFFERENCES:\n\n"
+        self.counts['link_differences_not_in_old'] = 0
+        self.counts['link_differences_not_in_new'] = 0
 
         for k, v_new in self.history_new.items():
 
@@ -240,7 +254,20 @@ class LinkToReport:
             self.report += '\n\t'.join('{}: {}'.format(*k) for k in enumerate(links_not_in_golden))
             self.report += '\n'
 
+            self.counts['link_differences_not_in_old'] += len(links_not_in_golden)
+            self.counts['link_differences_not_in_new'] += len(links_not_in_new)
+
         self.report += '\n\n'
 
         return self
 
+    def summary(self):
+        """
+        Summarize error and link counts
+        :return: self
+        """
+
+        s = ""
+        for k, v in self.counts.items():
+            s += f"{k}: {v}\n"
+        return s

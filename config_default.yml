@@ -17,6 +17,7 @@ report:
     golden_file: history_golden.json
     new_file: history_new.json
     report: linkto_report.txt
+    summary: linkto_summary.txt
     debug: False
     stream_log: False
     logfile: linkto.log

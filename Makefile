@@ -41,7 +41,7 @@ release-artifact: $(RELEASE_ARTIFACT_WHL)
 	@echo "::set-output name=tarball::${RELEASE_ARTIFACT_WHL}"
 	@echo "::set-output name=tarball_basename::$(notdir ${RELEASE_ARTIFACT_WHL})"
 
-$(RELEASE_ARTIFACT_WHL): $(wildcard src/*.py) $(wildcard bin/*) setup.py
+$(RELEASE_ARTIFACT_WHL): $(wildcard src/checkrs_linkto/*.py) $(wildcard bin/*) setup.py
 	pipenv run python3 setup.py bdist_wheel
 	shasum ${RELEASE_ARTIFACT_WHL} > ${RELEASE_ARTIFACT_WHL}.sha
 

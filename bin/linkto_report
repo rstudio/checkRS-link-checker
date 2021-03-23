@@ -37,6 +37,13 @@ def parse_options():
         type=str)
 
     command_parser.add_argument(
+        "--summary",
+        help="name of the report summary",
+        action="store",
+        dest="summary",
+        type=str)
+
+    command_parser.add_argument(
         "--debug",
         help="turn on debugging messages in the log",
         action="store_true",
@@ -135,9 +142,13 @@ if __name__ == "__main__":
     lcr.report_url_visit_differences()
     lcr.report_link_differences()
 
-    # saving the history dictionary into a file as a JSON formatted data and pretty print
+    # write the report to a file
     with open(options['report'], "w") as f:
         f.write(lcr.report)
+
+    # write the report to a file
+    with open(options['summary'], "w") as f:
+        f.write(lcr.summary())
 
     if lcr.error_flag is True:
         report_path = os.path.join(os.getcwd(), options['report'])
