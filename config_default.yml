@@ -1,0 +1,37 @@
+bot:
+    url: https://localhost:80/
+    history: history_new.json
+    depth: null
+    debug: False
+    stream_log: False
+    logfile: linkto.log
+    exclude_external_urls: True
+    crawl_delay: 1
+
+    # list of regular expressions describing urls not to visit
+    exclude_url_patterns:
+        # exclude urls that end with '.xyz'
+        - '.+\.xyz$'
+
+report:
+    golden_file: history_golden.json
+    new_file: history_new.json
+    report: linkto_report.txt
+    summary: linkto_summary.txt
+    debug: False
+    stream_log: False
+    logfile: linkto.log
+
+    # list of regular expressions describing types of connection errors to ignore
+    ignored_connection_error_patterns:
+        # don't tell us about certificate errors
+        - 'SSL: CERTIFICATE_VERIFY_FAILED'
+
+    # list of dictionaries with
+    # 1. keys that are regular expressions representing urls
+    # 2. values that are integers representing status codes we should ignore
+    # example configuration:
+    #
+    #ignored_status_error_patterns:
+    #    - 'localhost':
+    #        - 405

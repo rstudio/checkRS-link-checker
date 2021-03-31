@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+
+import json
+import argparse
+import logging
+import yaml
+
+from checkrs_linkto import bot
+
+# create logger
+logger = logging.getLogger('linkto_bot')
+
+
+def parse_options():
+    command_parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    command_parser.add_argument(
+        "--url",
+        help="url to start checking from",
+        action="store",
+        dest="url",
+        type=str)
+
+    command_parser.add_argument(
+        "--history",
+        help="name of the output json file",
+        action="store",
+        dest="history",
+        type=str)
+
+    command_parser.add_argument(
+        "--depth",
+        help="restrict bot by the number of clicks away from the original page",
+        action="store",
+        dest="depth",
+        type=int)
+
+    command_parser.add_argument(
+        "--debug",
+        help="turn on debugging messages in the log",
+        action="store_true",
+        dest="debug")
+
+    command_parser.add_argument(
+        "--stream-log",
+        help="print log messages to the console",
+        action="store_true",
+        dest="stream_log")
+
+    command_parser.add_argument(
+        "--exclude-external-urls",
+        help="skip making requests to urls that don't match the start url's netloc",
+        action="store_true",
+        dest="exclude_external_urls")
+
+    command_parser.add_argument(
+        "--logfile",
+        help="name of the logfile",
+        action="store",
+        dest="logfile",
+        type=str)
+
+    command_parser.add_argument(
+        "--config",
+        help="name of the configuration file",
+        action="store",
+        dest="config",
+        default="config_default.yml",
+        type=str)
+
+    # parse command line options
+    options = command_parser.parse_args()
+
+    combined_opts = dict()
+
+    # read the configuration file
+    with open(options.config) as f:
+        combined_opts = yaml.load(f, Loader=yaml.FullLoader)
+
+    # override the configuration file with values from the command line
+    options_dict = vars(options)
+    for key in options_dict.keys():
+        combined_opts['bot'][key] = options_dict[key]
+
+    return combined_opts['bot']
+
+
+if __name__ == "__main__":
+
+    # parse the command line options
+    options = parse_options()
+
+    if options['debug'] is True:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+
+    logger.setLevel(loglevel)
+
+    # create logging formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # set up a log file
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(options['logfile'])
+    fh.setLevel(logging.NOTSET)
+
+    # setting the logging formatter for this handler
+    fh.setFormatter(formatter)
+
+    # add the handler to the logger
+    logger.addHandler(fh)
+
+    # set up a log streamer
+    if options['stream_log'] is True:
+
+        # create console handler which logs even debug messages
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.NOTSET)
+
+        # setting the logging formatter for this handler
+        ch.setFormatter(formatter)
+
+        # add the handler to the logger
+        logger.addHandler(ch)
+
+    history = bot(
+        options['url'],
+        options['depth'],
+        options['crawl_delay'],
+        options['exclude_external_urls'],
+        options['exclude_url_patterns']
+    )
+
+    out = {
+        "start_url": options['url'],
+        "history": history
+    }
+
+    # saving the history dictionary into a file as a JSON formatted data and pretty print
+    with open(options['history'], "w") as json_file:
+        json.dump(out, json_file, indent=2)
+
