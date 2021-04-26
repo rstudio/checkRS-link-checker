@@ -5,11 +5,31 @@ import requests
 import time
 
 from collections import deque
+from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin, urlparse, urlunparse
 from urllib.robotparser import RobotFileParser
 
 # create logger
 logger = logging.getLogger('linkto_bot')
+
+DEFAULT_TIMEOUT = 5 # seconds
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    """
+    https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+    """
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
 
 
 def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclude_url_patterns=[]):
@@ -19,6 +39,11 @@ def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclud
     s.headers.update({
         'User-Agent': 'checkrs_linkto (+https://github.com/rstudio/checkRS-linkto)'
     })
+
+    # setup the request timeout adapter
+    timeout_adapter = TimeoutHTTPAdapter()
+    s.mount("https://", timeout_adapter)
+    s.mount("http://", timeout_adapter)
 
     to_be_visited = deque()
     history = dict()
