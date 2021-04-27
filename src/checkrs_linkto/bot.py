@@ -5,20 +5,47 @@ import requests
 import time
 
 from collections import deque
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urljoin, urlparse, urlunparse
 from urllib.robotparser import RobotFileParser
 
 # create logger
 logger = logging.getLogger('linkto_bot')
 
+DEFAULT_TIMEOUT = 60 # seconds
 
-def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclude_url_patterns=[]):
+class TimeoutHTTPAdapter(HTTPAdapter):
+    """
+    https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+    """
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
+def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclude_url_patterns=[], request_timeout=60):
 
     # setup a requests session with a user agent
     s = requests.Session()
     s.headers.update({
         'User-Agent': 'checkrs_linkto (+https://github.com/rstudio/checkRS-linkto)'
     })
+
+    # setup the request timeouts and retries
+    retry_strategy = Retry(total=2, backoff_factor=1)
+    timeout_adapter = TimeoutHTTPAdapter(timeout=request_timeout, max_retries=retry_strategy)
+    s.mount("https://", timeout_adapter)
+    s.mount("http://", timeout_adapter)
 
     to_be_visited = deque()
     history = dict()

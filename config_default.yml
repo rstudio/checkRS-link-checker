@@ -7,6 +7,7 @@ bot:
     logfile: linkto.log
     exclude_external_urls: True
     crawl_delay: 1
+    request_timeout: 60
 
     # list of regular expressions describing urls not to visit
     exclude_url_patterns:
