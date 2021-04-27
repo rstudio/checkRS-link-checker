@@ -6,13 +6,14 @@ import time
 
 from collections import deque
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from urllib.parse import urljoin, urlparse, urlunparse
 from urllib.robotparser import RobotFileParser
 
 # create logger
 logger = logging.getLogger('linkto_bot')
 
-DEFAULT_TIMEOUT = 5 # seconds
+DEFAULT_TIMEOUT = 60 # seconds
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     """
@@ -32,7 +33,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclude_url_patterns=[]):
+def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclude_url_patterns=[], request_timeout=60):
 
     # setup a requests session with a user agent
     s = requests.Session()
@@ -40,8 +41,9 @@ def bot(start_url, depth=None, crawl_delay=1, exclude_external_urls=True, exclud
         'User-Agent': 'checkrs_linkto (+https://github.com/rstudio/checkRS-linkto)'
     })
 
-    # setup the request timeout adapter
-    timeout_adapter = TimeoutHTTPAdapter()
+    # setup the request timeouts and retries
+    retry_strategy = Retry(total=2, backoff_factor=1)
+    timeout_adapter = TimeoutHTTPAdapter(timeout=request_timeout, max_retries=retry_strategy)
     s.mount("https://", timeout_adapter)
     s.mount("http://", timeout_adapter)
 

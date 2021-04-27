@@ -128,7 +128,8 @@ if __name__ == "__main__":
         options['depth'],
         options['crawl_delay'],
         options['exclude_external_urls'],
-        options['exclude_url_patterns']
+        options['exclude_url_patterns'],
+        options['request_timeout']
     )
 
     out = {
